@@ -15,3 +15,6 @@ EXPOSE 3000
 # Comando para ejecutar la app
 CMD ["npm", "run", "dev"]
 
+# cambiar esta linea al final CMD ["node", "index.js"]
+
+
