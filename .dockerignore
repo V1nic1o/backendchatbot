@@ -1,0 +1,33 @@
+# Ignora dependencias locales (serán instaladas dentro del contenedor)
+node_modules/
+
+# Ignora archivos de configuración de Git
+.git
+.gitignore
+
+# Ignora archivos de entorno (pero ⚠️ solo si usas `env_file` en docker-compose)
+# Si prefieres copiar el .env directamente, elimina la siguiente línea
+# .env
+
+# Ignora archivos temporales y del sistema
+.DS_Store
+Thumbs.db
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Ignora carpetas de build
+dist/
+build/
+
+# Ignora logs
+*.log
+logs/
+
+# Ignora configuraciones locales del editor
+.vscode/
+.idea/
+
+# Archivos de pruebas
+coverage/
+tests/
