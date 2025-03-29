@@ -1,0 +1,46 @@
+# Node modules
+node_modules/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# dotenv environment variables
+.env
+
+# Uploads / Archivos temporales o subidos
+uploads/
+*.tmp
+
+# VSCode config (opcional)
+.vscode/
+
+# Docker-related files
+*.local
+docker-compose.override.yml
+
+# Build
+dist/
+build/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Lock files (opcional si usas yarn)
+yarn.lock
+
+# Coverage reports
+coverage/
+.nyc_output/
+
+# Optional: PM2 logs
+.pids/
+*.log
