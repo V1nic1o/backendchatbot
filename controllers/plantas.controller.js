@@ -44,44 +44,78 @@ exports.listarDisponibles = async (req, res) => {
   }
 };
 
-// Crear nueva planta con imagen y atributos
+// Crear nueva planta con imagen (desde multipart/form-data)
 exports.crearPlanta = async (req, res) => {
+  const {
+    nombre, precio, disponibilidad,
+    clima, tamanio, luz, riego
+  } = req.body;
+
+  const imagen = req.file ? `/uploads/${req.file.filename}` : null;
+
+  if (!nombre || precio == null || disponibilidad == null || !clima || !tamanio || !luz || !riego) {
+    return res.status(400).json({ error: 'Todos los campos excepto imagen son requeridos' });
+  }
+
   try {
-    const {
-      nombre,
-      precio,
-      disponibilidad,
-      clima,
-      tamanio,
-      luz,
-      riego
-    } = req.body;
-
-    const imagen = req.file ? `/uploads/${req.file.filename}` : null;
-
-    // Verifica si realmente llegan los datos
-    console.log('BODY:', req.body);
-    console.log('IMAGEN:', imagen);
-
-    if (!nombre || !imagen || precio == null || disponibilidad == null || !clima || !tamanio || !luz || !riego) {
-      return res.status(400).json({ error: 'Todos los campos son requeridos' });
-    }
-
     const resultado = await pool.query(
       `INSERT INTO plantas 
       (nombre, imagen_url, precio, disponibilidad, clima, tamanio, luz, riego)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *`,
-      [nombre, imagen, precio, disponibilidad, clima, tamanio, luz, riego]
+      [
+        nombre,
+        imagen,
+        precio,
+        disponibilidad,
+        normalizarTexto(clima),
+        normalizarTexto(tamanio),
+        normalizarTexto(luz),
+        normalizarTexto(riego)
+      ]
     );
-
     res.status(201).json(resultado.rows[0]);
   } catch (error) {
-    console.error('Error en crearPlanta:', error);
+    console.error('Error al agregar planta:', error);
     res.status(500).json({ error: 'Error al agregar la planta' });
   }
 };
 
+// ✅ Crear planta desde JSON (sin imagen)
+exports.crearPlantaDesdeJSON = async (req, res) => {
+  const {
+    nombre, precio, disponibilidad,
+    clima, tamanio, luz, riego,
+    imagen_url_actual
+  } = req.body;
+
+  if (!nombre || precio == null || disponibilidad == null || !clima || !tamanio || !luz || !riego) {
+    return res.status(400).json({ error: 'Todos los campos excepto imagen son requeridos' });
+  }
+
+  try {
+    const resultado = await pool.query(
+      `INSERT INTO plantas 
+      (nombre, imagen_url, precio, disponibilidad, clima, tamanio, luz, riego)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING *`,
+      [
+        nombre,
+        imagen_url_actual,
+        precio,
+        disponibilidad,
+        normalizarTexto(clima),
+        normalizarTexto(tamanio),
+        normalizarTexto(luz),
+        normalizarTexto(riego)
+      ]
+    );
+    res.status(201).json(resultado.rows[0]);
+  } catch (error) {
+    console.error('Error al crear planta desde JSON:', error);
+    res.status(500).json({ error: 'Error al crear la planta' });
+  }
+};
 
 // Actualizar planta con o sin nueva imagen y atributos
 exports.actualizarPlanta = async (req, res) => {
@@ -96,12 +130,6 @@ exports.actualizarPlanta = async (req, res) => {
     imagen_url = `/uploads/${req.file.filename}`;
   }
 
-  // Normalizar atributos
-  const climaNorm = normalizarTexto(clima);
-  const tamanioNorm = normalizarTexto(tamanio);
-  const luzNorm = normalizarTexto(luz);
-  const riegoNorm = normalizarTexto(riego);
-
   try {
     const resultado = await pool.query(
       `UPDATE plantas SET 
@@ -109,7 +137,17 @@ exports.actualizarPlanta = async (req, res) => {
       clima = $5, tamanio = $6, luz = $7, riego = $8
       WHERE id = $9
       RETURNING *`,
-      [nombre, imagen_url, precio, disponibilidad, climaNorm, tamanioNorm, luzNorm, riegoNorm, id]
+      [
+        nombre,
+        imagen_url,
+        precio,
+        disponibilidad,
+        normalizarTexto(clima),
+        normalizarTexto(tamanio),
+        normalizarTexto(luz),
+        normalizarTexto(riego),
+        id
+      ]
     );
 
     if (resultado.rows.length === 0) {
