@@ -1,6 +1,9 @@
 // controllers/plantas.controller.js
 const pool = require('../db');
 
+// Función para normalizar texto
+const normalizarTexto = (txt) => txt?.trim().toLowerCase() || null;
+
 // Obtener todas las plantas
 exports.obtenerTodas = async (req, res) => {
   try {
@@ -54,13 +57,19 @@ exports.crearPlanta = async (req, res) => {
     return res.status(400).json({ error: 'Todos los campos son requeridos' });
   }
 
+  // Normalizar atributos
+  const climaNorm = normalizarTexto(clima);
+  const tamanioNorm = normalizarTexto(tamanio);
+  const luzNorm = normalizarTexto(luz);
+  const riegoNorm = normalizarTexto(riego);
+
   try {
     const resultado = await pool.query(
       `INSERT INTO plantas 
       (nombre, imagen_url, precio, disponibilidad, clima, tamanio, luz, riego)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *`,
-      [nombre, imagen, precio, disponibilidad, clima, tamanio, luz, riego]
+      [nombre, imagen, precio, disponibilidad, climaNorm, tamanioNorm, luzNorm, riegoNorm]
     );
     res.status(201).json(resultado.rows[0]);
   } catch (error) {
@@ -82,6 +91,12 @@ exports.actualizarPlanta = async (req, res) => {
     imagen_url = `/uploads/${req.file.filename}`;
   }
 
+  // Normalizar atributos
+  const climaNorm = normalizarTexto(clima);
+  const tamanioNorm = normalizarTexto(tamanio);
+  const luzNorm = normalizarTexto(luz);
+  const riegoNorm = normalizarTexto(riego);
+
   try {
     const resultado = await pool.query(
       `UPDATE plantas SET 
@@ -89,7 +104,7 @@ exports.actualizarPlanta = async (req, res) => {
       clima = $5, tamanio = $6, luz = $7, riego = $8
       WHERE id = $9
       RETURNING *`,
-      [nombre, imagen_url, precio, disponibilidad, clima, tamanio, luz, riego, id]
+      [nombre, imagen_url, precio, disponibilidad, climaNorm, tamanioNorm, luzNorm, riegoNorm, id]
     );
 
     if (resultado.rows.length === 0) {
