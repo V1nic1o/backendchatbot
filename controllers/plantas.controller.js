@@ -53,6 +53,10 @@ exports.crearPlanta = async (req, res) => {
 
   const imagen = req.file ? `/uploads/${req.file.filename}` : null;
 
+  console.log('BODY:', req.body);
+  console.log('FILE:', req.file);
+
+
   if (!nombre || !imagen || precio == null || disponibilidad == null || !clima || !tamanio || !luz || !riego) {
     return res.status(400).json({ error: 'Todos los campos son requeridos' });
   }
