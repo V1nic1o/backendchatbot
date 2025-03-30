@@ -16,9 +16,9 @@ router.get('/disponibles', controlador.listarDisponibles);
 router.get('/:nombre', controlador.obtenerPlantaPorNombre);
 
 // ✅ Ruta POST que acepta imagen
-router.post('/', upload.single('imagen'), controlador.crearPlanta);
+//router.post('/', upload.single('imagen'), controlador.crearPlanta);
 
-router.put('/:id', upload.single('imagen'), controlador.actualizarPlanta);
+//router.put('/:id', upload.single('imagen'), controlador.actualizarPlanta);
 router.delete('/:id', controlador.eliminarPlanta);
 
 module.exports = router;
