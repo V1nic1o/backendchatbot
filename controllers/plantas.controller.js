@@ -46,37 +46,42 @@ exports.listarDisponibles = async (req, res) => {
 
 // Crear nueva planta con imagen y atributos
 exports.crearPlanta = async (req, res) => {
-  const {
-    nombre, precio, disponibilidad,
-    clima, tamanio, luz, riego
-  } = req.body;
-
-  const imagen = req.file ? `/uploads/${req.file.filename}` : null;
-
-  if (!nombre || !imagen || precio == null || disponibilidad == null || !clima || !tamanio || !luz || !riego) {
-    return res.status(400).json({ error: 'Todos los campos son requeridos' });
-  }
-
-  // Normalizar atributos
-  const climaNorm = normalizarTexto(clima);
-  const tamanioNorm = normalizarTexto(tamanio);
-  const luzNorm = normalizarTexto(luz);
-  const riegoNorm = normalizarTexto(riego);
-
   try {
+    const {
+      nombre,
+      precio,
+      disponibilidad,
+      clima,
+      tamanio,
+      luz,
+      riego
+    } = req.body;
+
+    const imagen = req.file ? `/uploads/${req.file.filename}` : null;
+
+    // Verifica si realmente llegan los datos
+    console.log('BODY:', req.body);
+    console.log('IMAGEN:', imagen);
+
+    if (!nombre || !imagen || precio == null || disponibilidad == null || !clima || !tamanio || !luz || !riego) {
+      return res.status(400).json({ error: 'Todos los campos son requeridos' });
+    }
+
     const resultado = await pool.query(
       `INSERT INTO plantas 
       (nombre, imagen_url, precio, disponibilidad, clima, tamanio, luz, riego)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *`,
-      [nombre, imagen, precio, disponibilidad, climaNorm, tamanioNorm, luzNorm, riegoNorm]
+      [nombre, imagen, precio, disponibilidad, clima, tamanio, luz, riego]
     );
+
     res.status(201).json(resultado.rows[0]);
   } catch (error) {
-    console.error('Error al agregar planta:', error);
+    console.error('Error en crearPlanta:', error);
     res.status(500).json({ error: 'Error al agregar la planta' });
   }
 };
+
 
 // Actualizar planta con o sin nueva imagen y atributos
 exports.actualizarPlanta = async (req, res) => {
