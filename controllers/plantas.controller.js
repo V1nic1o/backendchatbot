@@ -57,7 +57,7 @@ exports.crearPlanta = async (req, res) => {
       riego
     } = req.body;
 
-    const imagen = req.file ? `/uploads/${req.file.filename}` : null;
+    const imagen =  null;
 
     // Verifica si realmente llegan los datos
     console.log('BODY:', req.body);
