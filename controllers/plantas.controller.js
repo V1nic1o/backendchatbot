@@ -1,8 +1,4 @@
-// controllers/plantas.controller.js
 const pool = require('../db');
-
-// Función para normalizar texto (opcional)
-const normalizarTexto = (txt) => txt?.trim().toLowerCase() || null;
 
 // Obtener todas las plantas
 exports.obtenerTodas = async (req, res) => {
@@ -46,6 +42,7 @@ exports.listarDisponibles = async (req, res) => {
 
 // Crear nueva planta con imagen y atributos
 exports.crearPlanta = async (req, res) => {
+  const imagen = req.file ? `/uploads/${req.file.filename}` : null;
   const {
     nombre,
     precio,
@@ -56,9 +53,9 @@ exports.crearPlanta = async (req, res) => {
     riego
   } = req.body;
 
-  console.log('💬 Datos recibidos:', req.body); // 👈 Diagnóstico
-
-  const imagen = req.file ? `/uploads/${req.file.filename}` : null;
+  console.log('🌱 Datos recibidos en backend:', {
+    nombre, precio, disponibilidad, clima, tamanio, luz, riego
+  });
 
   if (!nombre || !imagen || precio == null || disponibilidad == null || !clima || !tamanio || !luz || !riego) {
     return res.status(400).json({ error: 'Todos los campos son requeridos' });
@@ -73,23 +70,23 @@ exports.crearPlanta = async (req, res) => {
       [
         nombre,
         imagen,
-        Number(precio),
-        disponibilidad === 'true' || disponibilidad === true,
-        normalizarTexto(clima),
-        normalizarTexto(tamanio),
-        normalizarTexto(luz),
-        normalizarTexto(riego)
+        parseFloat(precio),
+        disponibilidad === 'true',
+        clima.trim().toLowerCase(),
+        tamanio.trim().toLowerCase(),
+        luz.trim().toLowerCase(),
+        riego.trim().toLowerCase()
       ]
     );
 
     res.status(201).json(resultado.rows[0]);
   } catch (error) {
-    console.error('❌ Error al agregar planta:', error);
+    console.error('Error al agregar planta:', error);
     res.status(500).json({ error: 'Error al agregar la planta' });
   }
 };
 
-// Actualizar planta con o sin imagen nueva
+// Actualizar planta
 exports.actualizarPlanta = async (req, res) => {
   const { id } = req.params;
   const {
@@ -103,14 +100,11 @@ exports.actualizarPlanta = async (req, res) => {
     riego
   } = req.body;
 
-  let imagen_url = imagen_url_actual;
-  if (req.file) {
-    imagen_url = `/uploads/${req.file.filename}`;
-  }
+  const imagen_url = req.file ? `/uploads/${req.file.filename}` : imagen_url_actual;
 
   try {
     const resultado = await pool.query(
-      `UPDATE plantas SET 
+      `UPDATE plantas SET
         nombre = $1,
         imagen_url = $2,
         precio = $3,
@@ -124,12 +118,12 @@ exports.actualizarPlanta = async (req, res) => {
       [
         nombre,
         imagen_url,
-        Number(precio),
-        disponibilidad === 'true' || disponibilidad === true,
-        normalizarTexto(clima),
-        normalizarTexto(tamanio),
-        normalizarTexto(luz),
-        normalizarTexto(riego),
+        parseFloat(precio),
+        disponibilidad === 'true',
+        clima.trim().toLowerCase(),
+        tamanio.trim().toLowerCase(),
+        luz.trim().toLowerCase(),
+        riego.trim().toLowerCase(),
         id
       ]
     );
@@ -140,7 +134,7 @@ exports.actualizarPlanta = async (req, res) => {
 
     res.json(resultado.rows[0]);
   } catch (error) {
-    console.error('❌ Error al actualizar planta:', error);
+    console.error('Error al actualizar planta:', error);
     res.status(500).json({ error: 'Error al actualizar la planta' });
   }
 };
@@ -155,7 +149,7 @@ exports.eliminarPlanta = async (req, res) => {
     }
     res.json({ mensaje: 'Planta eliminada correctamente' });
   } catch (error) {
-    console.error(error);
+    console.error('Error al eliminar planta:', error);
     res.status(500).json({ error: 'Error al eliminar la planta' });
   }
 };
