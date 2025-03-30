@@ -41,19 +41,26 @@ exports.listarDisponibles = async (req, res) => {
   }
 };
 
-// Crear nueva planta con imagen
+// Crear nueva planta con imagen y atributos
 exports.crearPlanta = async (req, res) => {
-  const { nombre, precio, disponibilidad } = req.body;
+  const {
+    nombre, precio, disponibilidad,
+    clima, tamanio, luz, riego
+  } = req.body;
+
   const imagen = req.file ? `/uploads/${req.file.filename}` : null;
 
-  if (!nombre || !imagen || precio == null || disponibilidad == null) {
+  if (!nombre || !imagen || precio == null || disponibilidad == null || !clima || !tamanio || !luz || !riego) {
     return res.status(400).json({ error: 'Todos los campos son requeridos' });
   }
 
   try {
     const resultado = await pool.query(
-      'INSERT INTO plantas (nombre, imagen_url, precio, disponibilidad) VALUES ($1, $2, $3, $4) RETURNING *',
-      [nombre, imagen, precio, disponibilidad]
+      `INSERT INTO plantas 
+      (nombre, imagen_url, precio, disponibilidad, clima, tamanio, luz, riego)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING *`,
+      [nombre, imagen, precio, disponibilidad, clima, tamanio, luz, riego]
     );
     res.status(201).json(resultado.rows[0]);
   } catch (error) {
@@ -62,21 +69,27 @@ exports.crearPlanta = async (req, res) => {
   }
 };
 
-// Actualizar planta con o sin imagen nueva
+// Actualizar planta con o sin nueva imagen y atributos
 exports.actualizarPlanta = async (req, res) => {
   const { id } = req.params;
-  const { nombre, precio, disponibilidad, imagen_url_actual } = req.body;
+  const {
+    nombre, precio, disponibilidad,
+    imagen_url_actual, clima, tamanio, luz, riego
+  } = req.body;
 
   let imagen_url = imagen_url_actual;
-
   if (req.file) {
     imagen_url = `/uploads/${req.file.filename}`;
   }
 
   try {
     const resultado = await pool.query(
-      'UPDATE plantas SET nombre = $1, imagen_url = $2, precio = $3, disponibilidad = $4 WHERE id = $5 RETURNING *',
-      [nombre, imagen_url, precio, disponibilidad, id]
+      `UPDATE plantas SET 
+      nombre = $1, imagen_url = $2, precio = $3, disponibilidad = $4,
+      clima = $5, tamanio = $6, luz = $7, riego = $8
+      WHERE id = $9
+      RETURNING *`,
+      [nombre, imagen_url, precio, disponibilidad, clima, tamanio, luz, riego, id]
     );
 
     if (resultado.rows.length === 0) {
