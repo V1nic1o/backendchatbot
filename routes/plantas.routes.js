@@ -20,8 +20,8 @@ router.get('/', controlador.obtenerTodas);
 router.get('/disponibles', controlador.listarDisponibles);
 router.get('/:nombre', controlador.obtenerPlantaPorNombre);
 
-// 🌱 Crear planta con imagen
-router.post('/plantas', upload.single('imagen'), controlador.crearPlanta);
+// 🌱 Crear planta con imagen (ahora es POST /plantas)
+router.post('/', upload.single('imagen'), controlador.crearPlanta);
 
 // 📝 Actualizar planta con o sin nueva imagen
 router.put('/:id', upload.single('imagen'), controlador.actualizarPlanta);
