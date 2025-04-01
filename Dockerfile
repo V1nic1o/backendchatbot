@@ -4,17 +4,15 @@ FROM node:18
 # Crear directorio de trabajo
 WORKDIR /app
 
-# Copiar archivos
+# Copiar archivos necesarios e instalar dependencias
 COPY package*.json ./
 RUN npm install
+
+# Copiar el resto del proyecto
 COPY . .
 
-# Exponer el puerto
+# Exponer el puerto (puede ajustarse con .env)
 EXPOSE 3000
 
-# Comando para ejecutar la app
-CMD ["npm", "run", "dev"]
-
-# cambiar esta linea al final CMD ["node", "index.js"]
-
-
+# Comando para ejecutar la app en modo producción
+CMD ["node", "index.js"]
