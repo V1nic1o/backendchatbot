@@ -48,10 +48,16 @@ exports.listarDisponibles = async (req, res) => {
   }
 };
 
-// Crear planta con Cloudinary
+// Crear nueva planta con Cloudinary
 exports.crearPlanta = async (req, res) => {
   let {
-    nombre, precio, disponibilidad, clima, tamanio, luz, riego
+    nombre,
+    precio,
+    disponibilidad,
+    clima,
+    tamanio,
+    luz,
+    riego
   } = req.body;
 
   clima = normalizarAArray(clima);
@@ -65,15 +71,19 @@ exports.crearPlanta = async (req, res) => {
 
   try {
     let imagen_url = null;
+    let imagen_id = null;
+
     if (req.file) {
       const resultado = await cloudinary.uploader.upload(req.file.path);
       imagen_url = resultado.secure_url;
+      imagen_id = resultado.public_id;
     }
 
     const resultado = await pool.query(
-      `INSERT INTO plantas (nombre, precio, disponibilidad, clima, tamanio, luz, riego, imagen_url)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       RETURNING *`,
+      `INSERT INTO plantas 
+      (nombre, precio, disponibilidad, clima, tamanio, luz, riego, imagen_url, imagen_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      RETURNING *`,
       [
         nombre,
         parseFloat(precio),
@@ -82,7 +92,8 @@ exports.crearPlanta = async (req, res) => {
         JSON.stringify(tamanio),
         JSON.stringify(luz),
         JSON.stringify(riego),
-        imagen_url
+        imagen_url,
+        imagen_id
       ]
     );
 
@@ -93,11 +104,19 @@ exports.crearPlanta = async (req, res) => {
   }
 };
 
-// Actualizar planta (Cloudinary compatible)
+// Actualizar planta con Cloudinary
 exports.actualizarPlanta = async (req, res) => {
   const { id } = req.params;
   let {
-    nombre, precio, disponibilidad, imagen_url_actual, clima, tamanio, luz, riego
+    nombre,
+    precio,
+    disponibilidad,
+    imagen_url_actual,
+    imagen_id_actual,
+    clima,
+    tamanio,
+    luz,
+    riego
   } = req.body;
 
   clima = normalizarAArray(clima);
@@ -106,28 +125,35 @@ exports.actualizarPlanta = async (req, res) => {
   riego = normalizarAArray(riego);
 
   try {
-    let imagen_url = imagen_url_actual || null;
+    let imagen_url = imagen_url_actual;
+    let imagen_id = imagen_id_actual;
 
     if (req.file) {
+      if (imagen_id_actual) {
+        await cloudinary.uploader.destroy(imagen_id_actual);
+      }
       const resultado = await cloudinary.uploader.upload(req.file.path);
       imagen_url = resultado.secure_url;
+      imagen_id = resultado.public_id;
     }
 
     const resultado = await pool.query(
       `UPDATE plantas SET
         nombre = $1,
         imagen_url = $2,
-        precio = $3,
-        disponibilidad = $4,
-        clima = $5,
-        tamanio = $6,
-        luz = $7,
-        riego = $8
-      WHERE id = $9
+        imagen_id = $3,
+        precio = $4,
+        disponibilidad = $5,
+        clima = $6,
+        tamanio = $7,
+        luz = $8,
+        riego = $9
+      WHERE id = $10
       RETURNING *`,
       [
         nombre,
         imagen_url,
+        imagen_id,
         parseFloat(precio),
         disponibilidad === 'true' || disponibilidad === true,
         JSON.stringify(clima),
@@ -149,15 +175,22 @@ exports.actualizarPlanta = async (req, res) => {
   }
 };
 
-// Eliminar planta
+// Eliminar planta y su imagen de Cloudinary
 exports.eliminarPlanta = async (req, res) => {
   const { id } = req.params;
   try {
-    const resultado = await pool.query('DELETE FROM plantas WHERE id = $1 RETURNING *', [id]);
+    const resultado = await pool.query('SELECT imagen_id FROM plantas WHERE id = $1', [id]);
     if (resultado.rows.length === 0) {
       return res.status(404).json({ error: 'Planta no encontrada' });
     }
-    res.json({ mensaje: 'Planta eliminada correctamente' });
+
+    const imagenId = resultado.rows[0].imagen_id;
+    if (imagenId) {
+      await cloudinary.uploader.destroy(imagenId);
+    }
+
+    await pool.query('DELETE FROM plantas WHERE id = $1', [id]);
+    res.json({ mensaje: 'Planta e imagen eliminadas correctamente' });
   } catch (error) {
     console.error('Error al eliminar planta:', error);
     res.status(500).json({ error: 'Error al eliminar la planta' });
