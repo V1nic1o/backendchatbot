@@ -21,7 +21,7 @@ router.get('/disponibles', controlador.listarDisponibles);
 router.get('/:nombre', controlador.obtenerPlantaPorNombre);
 
 // 🌱 Crear planta con imagen y atributos
-router.post('/', upload.single('imagen'), controlador.crearPlanta);
+router.post('/plantas', upload.single('imagen'), controlador.crearPlanta);
 
 // 📝 Actualizar planta con o sin nueva imagen
 router.put('/:id', upload.single('imagen'), controlador.actualizarPlanta);
