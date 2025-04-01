@@ -1,5 +1,12 @@
 const pool = require('../db');
 
+// Función auxiliar para normalizar valores a arrays
+const normalizarAArray = (valor) => {
+  if (!valor) return [];
+  if (Array.isArray(valor)) return valor.map(v => v.trim().toLowerCase());
+  return [valor.trim().toLowerCase()];
+};
+
 // Obtener todas las plantas
 exports.obtenerTodas = async (req, res) => {
   try {
@@ -40,9 +47,8 @@ exports.listarDisponibles = async (req, res) => {
   }
 };
 
-// Crear nueva planta con imagen y atributos
+// Crear nueva planta SIN imagen
 exports.crearPlanta = async (req, res) => {
-  const imagen = req.file ? `/uploads/${req.file.filename}` : null;
   const {
     nombre,
     precio,
@@ -53,29 +59,24 @@ exports.crearPlanta = async (req, res) => {
     riego
   } = req.body;
 
-  console.log('🌱 Datos recibidos en backend:', {
-    nombre, precio, disponibilidad, clima, tamanio, luz, riego
-  });
-
-  if (!nombre || !imagen || precio == null || disponibilidad == null || !clima || !tamanio || !luz || !riego) {
+  if (!nombre || precio == null || disponibilidad == null || !clima || !tamanio || !luz || !riego) {
     return res.status(400).json({ error: 'Todos los campos son requeridos' });
   }
 
   try {
     const resultado = await pool.query(
       `INSERT INTO plantas 
-      (nombre, imagen_url, precio, disponibilidad, clima, tamanio, luz, riego)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      (nombre, precio, disponibilidad, clima, tamanio, luz, riego)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *`,
       [
-        nombre,
-        imagen,
+        nombre.trim(),
         parseFloat(precio),
-        disponibilidad === 'true',
-        clima.trim().toLowerCase(),
-        tamanio.trim().toLowerCase(),
-        luz.trim().toLowerCase(),
-        riego.trim().toLowerCase()
+        disponibilidad === true || disponibilidad === 'true',
+        normalizarAArray(clima),
+        normalizarAArray(tamanio),
+        normalizarAArray(luz),
+        normalizarAArray(riego)
       ]
     );
 
@@ -93,37 +94,32 @@ exports.actualizarPlanta = async (req, res) => {
     nombre,
     precio,
     disponibilidad,
-    imagen_url_actual,
     clima,
     tamanio,
     luz,
     riego
   } = req.body;
 
-  const imagen_url = req.file ? `/uploads/${req.file.filename}` : imagen_url_actual;
-
   try {
     const resultado = await pool.query(
       `UPDATE plantas SET
         nombre = $1,
-        imagen_url = $2,
-        precio = $3,
-        disponibilidad = $4,
-        clima = $5,
-        tamanio = $6,
-        luz = $7,
-        riego = $8
-      WHERE id = $9
+        precio = $2,
+        disponibilidad = $3,
+        clima = $4,
+        tamanio = $5,
+        luz = $6,
+        riego = $7
+      WHERE id = $8
       RETURNING *`,
       [
-        nombre,
-        imagen_url,
+        nombre.trim(),
         parseFloat(precio),
-        disponibilidad === 'true',
-        clima.trim().toLowerCase(),
-        tamanio.trim().toLowerCase(),
-        luz.trim().toLowerCase(),
-        riego.trim().toLowerCase(),
+        disponibilidad === true || disponibilidad === 'true',
+        normalizarAArray(clima),
+        normalizarAArray(tamanio),
+        normalizarAArray(luz),
+        normalizarAArray(riego),
         id
       ]
     );
