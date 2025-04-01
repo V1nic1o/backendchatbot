@@ -1,4 +1,3 @@
-// plantas.controller.js
 const pool = require('../db');
 
 // Obtener todas las plantas
@@ -41,38 +40,26 @@ exports.listarDisponibles = async (req, res) => {
   }
 };
 
-// Crear nueva planta con imagen y atributos múltiples
+// Crear nueva planta con imagen y atributos
 exports.crearPlanta = async (req, res) => {
   const imagen = req.file ? `/uploads/${req.file.filename}` : null;
-  let { nombre, precio, disponibilidad, clima, tamanio, luz, riego } = req.body;
+  const {
+    nombre,
+    precio,
+    disponibilidad,
+    clima,
+    tamanio,
+    luz,
+    riego
+  } = req.body;
 
-  // Parsear los campos que se enviaron como JSON desde el frontend
-  try {
-    clima = JSON.parse(clima);
-    tamanio = JSON.parse(tamanio);
-    luz = JSON.parse(luz);
-    riego = JSON.parse(riego);
-  } catch (error) {
-    console.log('Error al parsear JSON:', error);
-  }
+  console.log('🌱 Datos recibidos en backend:', {
+    nombre, precio, disponibilidad, clima, tamanio, luz, riego
+  });
 
-  disponibilidad = (disponibilidad === 'true' || disponibilidad === true);
-
-  // Validar que se envíen datos en cada campo
-  if (!nombre || !imagen || precio == null || disponibilidad == null ||
-      !clima || (Array.isArray(clima) && clima.length === 0) ||
-      !tamanio || (Array.isArray(tamanio) && tamanio.length === 0) ||
-      !luz || (Array.isArray(luz) && luz.length === 0) ||
-      !riego || (Array.isArray(riego) && riego.length === 0)
-  ) {
+  if (!nombre || !imagen || precio == null || disponibilidad == null || !clima || !tamanio || !luz || !riego) {
     return res.status(400).json({ error: 'Todos los campos son requeridos' });
   }
-
-  // Formatear cada array a minúsculas y sin espacios extra
-  const climaArray = Array.isArray(clima) ? clima.map(item => item.trim().toLowerCase()) : [clima.trim().toLowerCase()];
-  const tamanioArray = Array.isArray(tamanio) ? tamanio.map(item => item.trim().toLowerCase()) : [tamanio.trim().toLowerCase()];
-  const luzArray = Array.isArray(luz) ? luz.map(item => item.trim().toLowerCase()) : [luz.trim().toLowerCase()];
-  const riegoArray = Array.isArray(riego) ? riego.map(item => item.trim().toLowerCase()) : [riego.trim().toLowerCase()];
 
   try {
     const resultado = await pool.query(
@@ -84,11 +71,11 @@ exports.crearPlanta = async (req, res) => {
         nombre,
         imagen,
         parseFloat(precio),
-        disponibilidad,
-        climaArray,
-        tamanioArray,
-        luzArray,
-        riegoArray
+        disponibilidad === 'true',
+        clima.trim().toLowerCase(),
+        tamanio.trim().toLowerCase(),
+        luz.trim().toLowerCase(),
+        riego.trim().toLowerCase()
       ]
     );
 
@@ -99,27 +86,21 @@ exports.crearPlanta = async (req, res) => {
   }
 };
 
-// Actualizar planta con atributos múltiples
+// Actualizar planta
 exports.actualizarPlanta = async (req, res) => {
   const { id } = req.params;
-  let { nombre, precio, disponibilidad, imagen_url_actual, clima, tamanio, luz, riego } = req.body;
+  const {
+    nombre,
+    precio,
+    disponibilidad,
+    imagen_url_actual,
+    clima,
+    tamanio,
+    luz,
+    riego
+  } = req.body;
+
   const imagen_url = req.file ? `/uploads/${req.file.filename}` : imagen_url_actual;
-  disponibilidad = (disponibilidad === 'true' || disponibilidad === true);
-
-  // Parsear los arrays enviados
-  try {
-    clima = JSON.parse(clima);
-    tamanio = JSON.parse(tamanio);
-    luz = JSON.parse(luz);
-    riego = JSON.parse(riego);
-  } catch (error) {
-    console.log('Error al parsear JSON:', error);
-  }
-
-  const climaArray = Array.isArray(clima) ? clima.map(item => item.trim().toLowerCase()) : [clima.trim().toLowerCase()];
-  const tamanioArray = Array.isArray(tamanio) ? tamanio.map(item => item.trim().toLowerCase()) : [tamanio.trim().toLowerCase()];
-  const luzArray = Array.isArray(luz) ? luz.map(item => item.trim().toLowerCase()) : [luz.trim().toLowerCase()];
-  const riegoArray = Array.isArray(riego) ? riego.map(item => item.trim().toLowerCase()) : [riego.trim().toLowerCase()];
 
   try {
     const resultado = await pool.query(
@@ -138,11 +119,11 @@ exports.actualizarPlanta = async (req, res) => {
         nombre,
         imagen_url,
         parseFloat(precio),
-        disponibilidad,
-        climaArray,
-        tamanioArray,
-        luzArray,
-        riegoArray,
+        disponibilidad === 'true',
+        clima.trim().toLowerCase(),
+        tamanio.trim().toLowerCase(),
+        luz.trim().toLowerCase(),
+        riego.trim().toLowerCase(),
         id
       ]
     );
