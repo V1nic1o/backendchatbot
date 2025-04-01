@@ -15,9 +15,9 @@ const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// ✅ CORS (para desarrollo con frontend en localhost:5173)
+// ✅ CORS (permite tanto localhost como otros orígenes para pruebas o producción)
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: true,
   credentials: true
 }));
 
