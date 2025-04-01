@@ -3,7 +3,7 @@ const router = express.Router();
 const controlador = require('../controllers/plantas.controller');
 const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const cloudinary = require('../config/cloudinary'); // ajusta la ruta si es necesario
+const cloudinary = require('../cloudinary'); // ajusta la ruta si es necesario
 
 // Configuración del storage para Cloudinary
 const storage = new CloudinaryStorage({
