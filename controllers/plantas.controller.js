@@ -1,10 +1,10 @@
 const pool = require('../db');
 
-// Función auxiliar para normalizar valores a arrays
+// Función para asegurar que los atributos sean arrays
 const normalizarAArray = (valor) => {
   if (!valor) return [];
-  if (Array.isArray(valor)) return valor.map(v => v.trim().toLowerCase());
-  return [valor.trim().toLowerCase()];
+  if (Array.isArray(valor)) return valor;
+  return [valor];
 };
 
 // Obtener todas las plantas
@@ -47,9 +47,10 @@ exports.listarDisponibles = async (req, res) => {
   }
 };
 
-// Crear nueva planta SIN imagen
+// Crear nueva planta con imagen y atributos
 exports.crearPlanta = async (req, res) => {
-  const {
+  const imagen = req.file ? `/uploads/${req.file.filename}` : null;
+  let {
     nombre,
     precio,
     disponibilidad,
@@ -59,24 +60,35 @@ exports.crearPlanta = async (req, res) => {
     riego
   } = req.body;
 
-  if (!nombre || precio == null || disponibilidad == null || !clima || !tamanio || !luz || !riego) {
-    return res.status(400).json({ error: 'Todos los campos son requeridos' });
+  // Convertir valores a arrays normalizados
+  clima = normalizarAArray(clima);
+  tamanio = normalizarAArray(tamanio);
+  luz = normalizarAArray(luz);
+  riego = normalizarAArray(riego);
+
+  console.log('🌱 Datos recibidos en backend:', {
+    nombre, precio, disponibilidad, clima, tamanio, luz, riego
+  });
+
+  if (!nombre || !imagen || precio == null || disponibilidad == null) {
+    return res.status(400).json({ error: 'Faltan campos obligatorios' });
   }
 
   try {
     const resultado = await pool.query(
       `INSERT INTO plantas 
-      (nombre, precio, disponibilidad, clima, tamanio, luz, riego)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      (nombre, imagen_url, precio, disponibilidad, clima, tamanio, luz, riego)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *`,
       [
-        nombre.trim(),
+        nombre,
+        imagen,
         parseFloat(precio),
-        disponibilidad === true || disponibilidad === 'true',
-        normalizarAArray(clima),
-        normalizarAArray(tamanio),
-        normalizarAArray(luz),
-        normalizarAArray(riego)
+        disponibilidad === 'true',
+        JSON.stringify(clima),
+        JSON.stringify(tamanio),
+        JSON.stringify(luz),
+        JSON.stringify(riego)
       ]
     );
 
@@ -90,36 +102,47 @@ exports.crearPlanta = async (req, res) => {
 // Actualizar planta
 exports.actualizarPlanta = async (req, res) => {
   const { id } = req.params;
-  const {
+  let {
     nombre,
     precio,
     disponibilidad,
+    imagen_url_actual,
     clima,
     tamanio,
     luz,
     riego
   } = req.body;
 
+  const imagen_url = req.file ? `/uploads/${req.file.filename}` : imagen_url_actual;
+
+  // Convertir a arrays normalizados
+  clima = normalizarAArray(clima);
+  tamanio = normalizarAArray(tamanio);
+  luz = normalizarAArray(luz);
+  riego = normalizarAArray(riego);
+
   try {
     const resultado = await pool.query(
       `UPDATE plantas SET
         nombre = $1,
-        precio = $2,
-        disponibilidad = $3,
-        clima = $4,
-        tamanio = $5,
-        luz = $6,
-        riego = $7
-      WHERE id = $8
+        imagen_url = $2,
+        precio = $3,
+        disponibilidad = $4,
+        clima = $5,
+        tamanio = $6,
+        luz = $7,
+        riego = $8
+      WHERE id = $9
       RETURNING *`,
       [
-        nombre.trim(),
+        nombre,
+        imagen_url,
         parseFloat(precio),
-        disponibilidad === true || disponibilidad === 'true',
-        normalizarAArray(clima),
-        normalizarAArray(tamanio),
-        normalizarAArray(luz),
-        normalizarAArray(riego),
+        disponibilidad === 'true',
+        JSON.stringify(clima),
+        JSON.stringify(tamanio),
+        JSON.stringify(luz),
+        JSON.stringify(riego),
         id
       ]
     );
