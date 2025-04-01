@@ -1,32 +1,28 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const path = require('path');
 const controlador = require('../controllers/plantas.controller');
+const multer = require('multer');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('../config/cloudinary'); // ajusta la ruta si es necesario
 
-// Configurar almacenamiento de multer
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'uploads/'),
-  filename: (req, file, cb) => {
-    const uniqueName = Date.now() + '-' + file.originalname;
-    cb(null, uniqueName);
+// Configuración del storage para Cloudinary
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'plantas',
+    allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
+    transformation: [{ width: 600, height: 600, crop: 'limit' }]
   }
 });
 
 const upload = multer({ storage });
 
-// 📦 Rutas para plantas
+// Rutas
 router.get('/', controlador.obtenerTodas);
 router.get('/disponibles', controlador.listarDisponibles);
 router.get('/:nombre', controlador.obtenerPlantaPorNombre);
-
-// 🌱 Crear planta con imagen (ahora es POST /plantas)
-router.post('/', upload.single('imagen'), controlador.crearPlanta);
-
-// 📝 Actualizar planta con o sin nueva imagen
+router.post('/plantas', upload.single('imagen'), controlador.crearPlanta);
 router.put('/:id', upload.single('imagen'), controlador.actualizarPlanta);
-
-// ❌ Eliminar planta
 router.delete('/:id', controlador.eliminarPlanta);
 
 module.exports = router;

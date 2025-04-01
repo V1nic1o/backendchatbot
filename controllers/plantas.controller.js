@@ -1,4 +1,5 @@
 const pool = require('../db');
+const cloudinary = require('../cloudinary');
 
 // Función para asegurar que los atributos sean arrays
 const normalizarAArray = (valor) => {
@@ -47,47 +48,32 @@ exports.listarDisponibles = async (req, res) => {
   }
 };
 
-// Crear nueva planta (sin imagen por ahora)
+// Crear planta con Cloudinary
 exports.crearPlanta = async (req, res) => {
   let {
-    nombre,
-    precio,
-    disponibilidad,
-    clima,
-    tamanio,
-    luz,
-    riego
+    nombre, precio, disponibilidad, clima, tamanio, luz, riego
   } = req.body;
 
-  // Convertir valores a arrays normalizados
   clima = normalizarAArray(clima);
   tamanio = normalizarAArray(tamanio);
   luz = normalizarAArray(luz);
   riego = normalizarAArray(riego);
 
-  console.log('🌱 Datos recibidos en backend:', {
-    nombre, precio, disponibilidad, clima, tamanio, luz, riego
-  });
-
-  // Validación: todos los campos deben tener valores
-  if (
-    !nombre ||
-    precio == null ||
-    disponibilidad == null ||
-    clima.length === 0 ||
-    tamanio.length === 0 ||
-    luz.length === 0 ||
-    riego.length === 0
-  ) {
+  if (!nombre || precio == null || disponibilidad == null || clima.length === 0 || tamanio.length === 0 || luz.length === 0 || riego.length === 0) {
     return res.status(400).json({ error: 'Todos los campos son requeridos' });
   }
 
   try {
+    let imagen_url = null;
+    if (req.file) {
+      const resultado = await cloudinary.uploader.upload(req.file.path);
+      imagen_url = resultado.secure_url;
+    }
+
     const resultado = await pool.query(
-      `INSERT INTO plantas 
-      (nombre, precio, disponibilidad, clima, tamanio, luz, riego)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *`,
+      `INSERT INTO plantas (nombre, precio, disponibilidad, clima, tamanio, luz, riego, imagen_url)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING *`,
       [
         nombre,
         parseFloat(precio),
@@ -95,7 +81,8 @@ exports.crearPlanta = async (req, res) => {
         JSON.stringify(clima),
         JSON.stringify(tamanio),
         JSON.stringify(luz),
-        JSON.stringify(riego)
+        JSON.stringify(riego),
+        imagen_url
       ]
     );
 
@@ -106,29 +93,26 @@ exports.crearPlanta = async (req, res) => {
   }
 };
 
-// Actualizar planta (imagen opcional)
+// Actualizar planta (Cloudinary compatible)
 exports.actualizarPlanta = async (req, res) => {
   const { id } = req.params;
   let {
-    nombre,
-    precio,
-    disponibilidad,
-    imagen_url_actual,
-    clima,
-    tamanio,
-    luz,
-    riego
+    nombre, precio, disponibilidad, imagen_url_actual, clima, tamanio, luz, riego
   } = req.body;
 
-  const imagen_url = req.file ? `/uploads/${req.file.filename}` : imagen_url_actual;
-
-  // Convertir a arrays normalizados
   clima = normalizarAArray(clima);
   tamanio = normalizarAArray(tamanio);
   luz = normalizarAArray(luz);
   riego = normalizarAArray(riego);
 
   try {
+    let imagen_url = imagen_url_actual || null;
+
+    if (req.file) {
+      const resultado = await cloudinary.uploader.upload(req.file.path);
+      imagen_url = resultado.secure_url;
+    }
+
     const resultado = await pool.query(
       `UPDATE plantas SET
         nombre = $1,
