@@ -47,9 +47,8 @@ exports.listarDisponibles = async (req, res) => {
   }
 };
 
-// Crear nueva planta con imagen y atributos
+// Crear nueva planta (sin imagen por ahora)
 exports.crearPlanta = async (req, res) => {
-  const imagen = req.file ? `/uploads/${req.file.filename}` : null;
   let {
     nombre,
     precio,
@@ -70,21 +69,29 @@ exports.crearPlanta = async (req, res) => {
     nombre, precio, disponibilidad, clima, tamanio, luz, riego
   });
 
-  if (!nombre || !imagen || precio == null || disponibilidad == null) {
-    return res.status(400).json({ error: 'Faltan campos obligatorios' });
+  // Validación: todos los campos deben tener valores
+  if (
+    !nombre ||
+    precio == null ||
+    disponibilidad == null ||
+    clima.length === 0 ||
+    tamanio.length === 0 ||
+    luz.length === 0 ||
+    riego.length === 0
+  ) {
+    return res.status(400).json({ error: 'Todos los campos son requeridos' });
   }
 
   try {
     const resultado = await pool.query(
       `INSERT INTO plantas 
-      (nombre, imagen_url, precio, disponibilidad, clima, tamanio, luz, riego)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      (nombre, precio, disponibilidad, clima, tamanio, luz, riego)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *`,
       [
         nombre,
-        imagen,
         parseFloat(precio),
-        disponibilidad === 'true',
+        disponibilidad === 'true' || disponibilidad === true,
         JSON.stringify(clima),
         JSON.stringify(tamanio),
         JSON.stringify(luz),
@@ -99,7 +106,7 @@ exports.crearPlanta = async (req, res) => {
   }
 };
 
-// Actualizar planta
+// Actualizar planta (imagen opcional)
 exports.actualizarPlanta = async (req, res) => {
   const { id } = req.params;
   let {
@@ -138,7 +145,7 @@ exports.actualizarPlanta = async (req, res) => {
         nombre,
         imagen_url,
         parseFloat(precio),
-        disponibilidad === 'true',
+        disponibilidad === 'true' || disponibilidad === true,
         JSON.stringify(clima),
         JSON.stringify(tamanio),
         JSON.stringify(luz),
