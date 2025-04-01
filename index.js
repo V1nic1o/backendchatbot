@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const path = require('path');
 const plantaRoutes = require('./routes/plantas.routes');
 const iaRoutes = require('./routes/ia.routes');
 const chatbotRoutes = require('./routes/chatbot.routes');
@@ -21,17 +20,14 @@ app.use(cors({
   credentials: true
 }));
 
-// ✅ Servir imágenes desde /uploads
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// ✅ Inicializar estado del chatbot
+// 🧠 Inicializar estado del chatbot
 app.use((req, res, next) => {
   if (!global.chatStates) global.chatStates = {};
   req.chatStates = global.chatStates;
   next();
 });
 
-// 🕒 Middleware de inactividad del chatbot
+// ⏳ Middleware de inactividad del chatbot
 app.use(chatbotTimeoutMiddleware);
 
 // ✅ Confirmación de conexión al pool
