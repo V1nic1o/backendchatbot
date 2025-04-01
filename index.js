@@ -11,9 +11,11 @@ const pool = require('./db');
 dotenv.config();
 const app = express();
 
+// ✅ Middleware para leer cuerpos JSON y formularios
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+// ✅ CORS (para desarrollo con frontend en localhost:5173)
 app.use(cors({
   origin: 'http://localhost:5173',
   credentials: true
@@ -22,20 +24,20 @@ app.use(cors({
 // ✅ Servir imágenes desde /uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// ✅ Inicializar req.chatStates
+// ✅ Inicializar estado del chatbot
 app.use((req, res, next) => {
   if (!global.chatStates) global.chatStates = {};
   req.chatStates = global.chatStates;
   next();
 });
 
-// 🕒 Middleware de inactividad
+// 🕒 Middleware de inactividad del chatbot
 app.use(chatbotTimeoutMiddleware);
 
-// ✅ Confirmación de configuración del pool
+// ✅ Confirmación de conexión al pool
 console.log('✅ Conexión a PostgreSQL configurada (pool listo para usar)');
 
-// 📦 Rutas
+// 📦 Rutas principales
 app.use('/plantas', plantaRoutes);
 app.use('/ia', iaRoutes);
 app.use('/chatbot', chatbotRoutes);
