@@ -1,9 +1,8 @@
 const pool = require('../db');
 const natural = require('natural');
 const { clasificarFrase } = require('../ia-local');
-const { recomendarPlantas } = require('../recomendador'); // nuevo archivo que crearás
+const { recomendarPlantas } = require('../recomendador');
 
-// Cargar modelo NLP
 let clasificador;
 natural.BayesClassifier.load('./utils/modeloNLP.json', null, (err, classifier) => {
   if (err) console.error('❌ Error al cargar modelo NLP:', err);
@@ -13,7 +12,6 @@ natural.BayesClassifier.load('./utils/modeloNLP.json', null, (err, classifier) =
   }
 });
 
-// Almacén de preferencias por usuario (temporal)
 const recomendaciones = {};
 
 const chatbotController = async (req, res) => {
@@ -31,7 +29,6 @@ const chatbotController = async (req, res) => {
     return finalizarConversacion(req, res, chatId);
   }
 
-  // 🔄 Flujo del recomendador guiado
   if (estado.startsWith('recomendar')) {
     return manejarRecomendador(req, res, chatId, mensaje);
   }
@@ -41,7 +38,7 @@ const chatbotController = async (req, res) => {
   }
 
   if (estado === 'inicio') {
-    return mensajeInicial(req, res, chatId);
+    return mensajeInicial(req, res, chatId); // ✅ ya responde con botones visuales
   }
 
   if (estado === 'esperando_opcion') {
@@ -53,7 +50,7 @@ const chatbotController = async (req, res) => {
         case 'cotizar':
           return manejarCotizar(req, res, chatId);
         case 'saludo':
-          return mensajeInicial(req, res, chatId);
+          return mensajeInicial(req, res, chatId); // ✅ responde igual desde NLP
         case 'despedida':
           return finalizarConversacion(req, res, chatId);
         case 'recomendar':
@@ -86,7 +83,20 @@ const chatbotController = async (req, res) => {
   return res.json({ chatId, respuesta: '🤖 No entendí tu mensaje. Por favor selecciona una opción válida.' });
 };
 
-// 🌱 Manejar preguntas del recomendador
+const mensajeInicial = (req, res, chatId) => {
+  req.chatStates[chatId] = 'esperando_opcion';
+  return res.json({
+    chatId,
+    respuesta: '👋 ¡Hola! Soy el asistente del vivero 🌿. ¿En qué puedo ayudarte hoy?\n\nSelecciona una opción:',
+    botones: [
+      { texto: 'Cotizar Planta', accion: 'cotizar' },
+      { texto: 'Recomendador de Plantas', accion: 'recomendar' },
+      { texto: 'Servicio al Cliente', accion: 'servicio_cliente' },
+      { texto: 'Finalizar Conversación', accion: 'finalizar' }
+    ]
+  });
+};
+
 const manejarRecomendador = async (req, res, chatId, mensaje) => {
   const preferencias = recomendaciones[chatId] || {};
 
@@ -142,32 +152,24 @@ const manejarRecomendador = async (req, res, chatId, mensaje) => {
         });
       }
 
-      const respuestaPlantas = plantas.map(p => (
-        `🌱 *${p.nombre}*\n💲 Q${p.precio} | 📦 ${p.disponibilidad ? 'Disponible' : 'Agotada'}`
-      )).join('\n\n');
+      const mensajes = plantas.slice(0, 3).map(planta => ({
+        tipo: 'bot',
+        texto: `🌱 *${planta.nombre}*\n💲 Precio: Q${planta.precio}\n📦 Disponible: ${planta.disponibilidad ? 'Sí' : 'No'}`,
+        imagen: planta.imagen_url,
+        botones: [
+          { texto: 'Cotizar esta', accion: `cotizar_${planta.nombre}` },
+          { texto: 'Ver más info', accion: `info_${planta.nombre}` }
+        ]
+      }));
 
       return res.json({
         chatId,
-        respuesta: `🌿 Aquí tienes algunas plantas que se ajustan a tus preferencias:\n\n${respuestaPlantas}`
+        respuestas: mensajes
       });
 
     default:
       return res.json({ chatId, respuesta: '🤖 Error en el flujo del recomendador.' });
   }
-};
-
-const mensajeInicial = (req, res, chatId) => {
-  req.chatStates[chatId] = 'esperando_opcion';
-  return res.json({
-    chatId,
-    respuesta: '👋 ¡Hola! Soy el asistente del vivero 🌿. ¿En qué puedo ayudarte hoy?\n\nSelecciona una opción:',
-    botones: [
-      { texto: 'Cotizar Planta', accion: 'cotizar' },
-      { texto: 'Recomendador de Plantas', accion: 'recomendar' },
-      { texto: 'Servicio al Cliente', accion: 'servicio_cliente' },
-      { texto: 'Finalizar Conversación', accion: 'finalizar' }
-    ]
-  });
 };
 
 const finalizarConversacion = (req, res, chatId) => {
