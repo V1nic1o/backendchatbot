@@ -1,5 +1,16 @@
 const pool = require('../db');
+const natural = require('natural');
 const { clasificarFrase } = require('../ia-local');
+
+// Cargar modelo NLP entrenado
+let clasificador;
+natural.BayesClassifier.load('./utils/modeloNLP.json', null, (err, classifier) => {
+  if (err) console.error('❌ Error al cargar modelo NLP:', err);
+  else {
+    clasificador = classifier;
+    console.log('✅ Modelo NLP cargado con éxito.');
+  }
+});
 
 // Función para mensaje inicial
 const mensajeInicial = (req, res, chatId) => {
@@ -47,13 +58,41 @@ const chatbotController = async (req, res) => {
   }
 
   if (estado === 'esperando_opcion') {
-    const clasificacion = clasificarFrase(mensaje);
-    if (clasificacion === 'cotizar') {
-      return manejarCotizar(req, res, chatId);
+    // 👉 Clasificación usando el modelo NLP si está cargado
+    if (clasificador) {
+      const intent = clasificador.classify(mensaje);
+      console.log(`🧠 Intento clasificado como: ${intent}`);
+
+      switch (intent) {
+        case 'cotizar':
+          return manejarCotizar(req, res, chatId);
+        case 'recomendar_sombra':
+          return res.json({
+            chatId,
+            respuesta: '🌿 Te recomiendo plantas para sombra como la *Calathea* o el *Helecho*. (Pronto podrás ver más sugerencias personalizadas)',
+          });
+        case 'recomendar_riego_bajo':
+          return res.json({
+            chatId,
+            respuesta: '💧 Algunas plantas que requieren poco riego son el *Cactus* y la *Sansevieria*.',
+          });
+        case 'saludo':
+          return res.json({
+            chatId,
+            respuesta: '👋 ¡Hola! ¿En qué puedo ayudarte hoy?',
+          });
+        case 'despedida':
+          return finalizarConversacion(req, res, chatId);
+        default:
+          return res.json({
+            chatId,
+            respuesta: '🤖 No entendí tu mensaje. Por favor escribe una opción como "cotizar" o "quiero una planta para sombra".',
+          });
+      }
     } else {
       return res.json({
         chatId,
-        respuesta: '❗ Opción no válida. Por favor escribe "cotizar" o "finalizar".'
+        respuesta: '🤖 Estoy cargando mi inteligencia... intenta de nuevo en unos segundos.',
       });
     }
   }
@@ -69,7 +108,7 @@ const finalizarConversacion = (req, res, chatId) => {
   req.chatStates[chatId] = 'inicio';
   return res.json({
     chatId,
-    respuesta: '✅ Conversación finalizada. Escribe un nuevo mensaje para comenzar otra vez.'
+    respuesta: '✅ Conversación finalizada. Escribe un nuevo mensaje para comenzar otra vez.',
   });
 };
 
